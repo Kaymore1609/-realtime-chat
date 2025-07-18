@@ -1,56 +1,63 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const cors = require('cors');
+// index.js
+import express from 'express';
+import http from 'http';
+import { Server as SocketIO } from 'socket.io';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
-
-const io = new Server(server, {
+const io = new SocketIO(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: '*',  // adjust this for your frontend URL in production
     methods: ['GET', 'POST'],
   },
 });
 
+// Middleware
 app.use(cors());
+app.use(helmet());
+app.use(morgan('dev'));
+app.use(express.json());
 
-let users = {};
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('MongoDB connected successfully'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
+// Basic API route
+app.get('/', (req, res) => {
+  res.send('Realtime chat backend running');
+});
+
+// Socket.io connection
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
 
-  socket.on('register', (username) => {
-    users[socket.id] = username;
-    io.emit('users', users);
-  });
-
   socket.on('chat message', (msg) => {
+    // Broadcast message to all clients
     io.emit('chat message', msg);
-  });
-
-  socket.on('private message', ({ to, message, from }) => {
-    io.to(to).emit('private message', { message, from });
-  });
-
-  socket.on('typing', (username) => {
-    socket.broadcast.emit('typing', username);
-  });
-
-  socket.on('stopTyping', () => {
-    socket.broadcast.emit('stopTyping');
   });
 
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
-    delete users[socket.id];
-    io.emit('users', users);
   });
 });
 
-server.listen(3001, () => {
-  console.log('Server running on http://localhost:3001');
+// Start server
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
 });
+
+
+
+
 
 
 
