@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:3001');
+// ✅ Updated socket connection to your deployed backend
+const socket = io('https://realtime-chat-server-ndom.onrender.com');
 const username = 'Bokamoso';
 
 function App() {
@@ -171,14 +172,3 @@ function App() {
 }
 
 export default App;
-
-
-
-
-
-
-
-
-
-
-
